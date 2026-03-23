@@ -10,7 +10,7 @@ RUN chmod +x ./gradlew
 RUN ./gradlew --no-daemon --build-cache dependencies --info
 
 COPY src/ src/
-
+RUN curl -f -s -o /dev/null -w "Status: %{http_code} for %{url_effective}\n"
 RUN ./gradlew --no-daemon --build-cache build \
     -x spotlessJavaApply -x spotlessJava \
     -Dquarkus.native.enabled=true \
@@ -20,10 +20,10 @@ RUN ./gradlew --no-daemon --build-cache build \
     --info
 FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
 WORKDIR /work/
-
 RUN microdnf install -y glibc zlib libstdc++ && microdnf clean all
 
 COPY --from=native-build /app/build/*-runner ./
+
 RUN chmod +x ./*-runner
 
 EXPOSE 8080
