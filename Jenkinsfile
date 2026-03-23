@@ -99,6 +99,13 @@ pipeline {
 
             # Проверяем, что подключение к remote-docker по TLS работает.
             # Если mTLS или доверие к CA настроены неправильно, pipeline упадёт здесь.
+            echo "=== cert.json ==="
+            cat cert.json
+            echo
+            echo "=== key.pem head ==="
+            head -5 .docker-tls/key.pem
+            echo
+            ls -l .docker-tls
             docker version
 
             # Логинимся в приватный registry как writer.
