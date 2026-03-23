@@ -132,7 +132,6 @@ pipeline {
           # BUILD_NUMBER даёт уникальный тег текущей сборки,
           # latest обновляется на свежую версию.
           docker build \
-            --add-host=host.docker.internal:host-gateway \
             --cache-from ${IMAGE_NAME}:latest \
             -t ${IMAGE_NAME}:${BUILD_NUMBER} \
             -t ${IMAGE_NAME}:latest \
