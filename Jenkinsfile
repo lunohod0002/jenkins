@@ -37,6 +37,7 @@ pipeline {
 
           // Выполняем shell-скрипт.
           sh '''
+          mkdir -p .docker-tls
           ROLE_ID_CLEAN=$(printf %s "$VAULT_ROLE_ID" | tr -d '\\r\\n')
           SECRET_ID_CLEAN=$(printf %s "$VAULT_SECRET_ID" | tr -d '\\r\\n')
 
@@ -81,7 +82,8 @@ pipeline {
             --request POST \
             --data '{"common_name":"jenkins-client","ttl":"1h"}' \
             "$VAULT_ADDR/v1/pki/issue/docker-client" > cert.json
-
+          TLS_DIR="$WORKSPACE/.docker-tls"
+          mkdir -p "$TLS_DIR"
           jq -e '.data.private_key and .data.certificate' cert.json >/dev/null || {
             echo "Failed to issue docker client certificate"
             cat cert.json
