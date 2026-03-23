@@ -13,7 +13,7 @@ pipeline {
     DOCKER_TLS_VERIFY = '1'
 
     // Имя образа в приватном registry.
-    IMAGE_NAME = 'registry-proxy/lab/app'
+    IMAGE_NAME = 'registry-proxy:443/lab/app'
   }
 
   stages {
@@ -105,7 +105,7 @@ pipeline {
 
             # Логинимся в приватный registry как writer.
             # Пароль передаём через stdin, а не в аргументах команды.
-            echo "$REGISTRY_PASS" | docker login registry-proxy \
+            echo "$REGISTRY_PASS" | docker login registry-proxy:443 \
               --username "$REGISTRY_USER" \
               --password-stdin
           '''
