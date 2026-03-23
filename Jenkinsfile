@@ -132,8 +132,8 @@ pipeline {
           # BUILD_NUMBER даёт уникальный тег текущей сборки,
           # latest обновляется на свежую версию.
           docker build \
+            --network=host \
             --cache-from ${IMAGE_NAME}:latest \
-            --progress=plain \
             -t ${IMAGE_NAME}:${BUILD_NUMBER} \
             -t ${IMAGE_NAME}:latest \
             .
