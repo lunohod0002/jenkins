@@ -20,8 +20,8 @@ RUN ./gradlew --no-daemon --build-cache build \
 FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
 WORKDIR /work/
 RUN ls 
-RUN ls -l
-RUN curl -f -s -o /dev/null -w "Status: %{http_code} for %{url_effective}\n" https://ya.ru
+RUN ls -la
+RUN curl -f -s -o /dev/null -w "Status: %{http_code} for %{url_effective}\n" https://google.com
 
 RUN microdnf install -y glibc zlib libstdc++ && microdnf clean all
 
