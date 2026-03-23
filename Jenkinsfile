@@ -40,38 +40,36 @@ pipeline {
             # Отключаем echo команд в логе,
             # чтобы случайно не светить секреты.
             set +x
-
-            # Создаём каталог, где будут лежать TLS-файлы
-            # для подключения Docker CLI к remote-docker.
             mkdir -p .docker-tls
 
-            # Логинимся в Vault через AppRole.
-            # --cacert указывает доверенный сертификат Vault,
-            # который примонтирован в контейнер Jenkins.
             LOGIN_JSON=$(curl --silent \
               --cacert /var/jenkins_home/vault-ca/vault.crt \
               --request POST \
               --data "{\"role_id\":\"$VAULT_ROLE_ID\",\"secret_id\":\"$VAULT_SECRET_ID\"}" \
               "$VAULT_ADDR/v1/auth/approle/login")
 
-            # Достаём временный Vault token из JSON-ответа.
-            VAULT_TOKEN=$(echo "$LOGIN_JSON" | jq -r .auth.client_token)
+            VAULT_TOKEN=$(echo "$LOGIN_JSON" | jq -r '.auth.client_token // empty')
 
-            # Читаем из Vault секрет writer для Docker Registry.
-            # По политике Jenkins имеет доступ только к этому пути.
+            if [ -z "$VAULT_TOKEN" ]; then
+              echo "Vault AppRole login failed"
+              echo "$LOGIN_JSON"
+              exit 1
+            fi
+
             curl --silent \
               --cacert /var/jenkins_home/vault-ca/vault.crt \
               -H "X-Vault-Token: $VAULT_TOKEN" \
               "$VAULT_ADDR/v1/kv/data/ci/registry/writer" > writer.json
 
-            # Извлекаем логин пользователя registry.
-            export REGISTRY_USER=$(jq -r '.data.data.username' writer.json)
+            jq -e '.data.data.username and .data.data.password' writer.json >/dev/null || {
+              echo "Failed to read writer credentials from Vault"
+              cat writer.json
+              exit 1
+            }
 
-            # Извлекаем пароль пользователя registry.
+            export REGISTRY_USER=$(jq -r '.data.data.username' writer.json)
             export REGISTRY_PASS=$(jq -r '.data.data.password' writer.json)
 
-            # Запрашиваем у Vault короткоживущий клиентский сертификат
-            # для подключения к Docker daemon по mTLS.
             curl --silent \
               --cacert /var/jenkins_home/vault-ca/vault.crt \
               -H "X-Vault-Token: $VAULT_TOKEN" \
@@ -79,11 +77,14 @@ pipeline {
               --data '{"common_name":"jenkins-client","ttl":"1h"}' \
               "$VAULT_ADDR/v1/pki/issue/docker-client" > cert.json
 
-            # Сохраняем приватный ключ клиентского сертификата.
-            jq -r '.data.private_key' cert.json > .docker-tls/key.pem
+            jq -e '.data.private_key and .data.certificate' cert.json >/dev/null || {
+              echo "Failed to issue docker client certificate"
+              cat cert.json
+              exit 1
+            }
 
-            # Сохраняем сам клиентский сертификат.
-            jq -r '.data.certificate' cert.json > .docker-tls/cert.pem
+            jq -r '.data.private_key' cert.json > .docker-tls/key.pem
+jq -r '.data.certificate' cert.json > .docker-tls/cert.pem
 
             # Читаем CA-сертификат из Vault.
             # Он нужен Docker CLI, чтобы проверять серверный сертификат remote-docker.
