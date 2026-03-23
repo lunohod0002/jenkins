@@ -133,6 +133,7 @@ pipeline {
           # latest обновляется на свежую версию.
           docker build \
             --cache-from ${IMAGE_NAME}:latest \
+            --progress=plain \
             -t ${IMAGE_NAME}:${BUILD_NUMBER} \
             -t ${IMAGE_NAME}:latest \
             .
