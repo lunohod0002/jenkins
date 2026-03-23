@@ -42,12 +42,12 @@ pipeline {
             set +x
             mkdir -p .docker-tls
 
-            LOGIN_JSON=$(curl --silent \
-              --cacert /var/jenkins_home/vault-ca/vault.crt \
-              --request POST \
-              --data "{\"role_id\":\"$VAULT_ROLE_ID\",\"secret_id\":\"$VAULT_SECRET_ID\"}" \
-              "$VAULT_ADDR/v1/auth/approle/login")
-
+            LOGIN_JSON=$(curl --silent --show-error --fail \
+            --cacert /var/jenkins_home/vault-ca/vault.crt \
+            -H "Content-Type: application/json" \
+            --request POST \
+            --data "$LOGIN_PAYLOAD" \
+            "$VAULT_ADDR/v1/auth/approle/login")
             VAULT_TOKEN=$(echo "$LOGIN_JSON" | jq -r '.auth.client_token // empty')
 
             if [ -z "$VAULT_TOKEN" ]; then
@@ -84,7 +84,7 @@ pipeline {
             }
 
             jq -r '.data.private_key' cert.json > .docker-tls/key.pem
-jq -r '.data.certificate' cert.json > .docker-tls/cert.pem
+            jq -r '.data.certificate' cert.json > .docker-tls/cert.pem
 
             # Читаем CA-сертификат из Vault.
             # Он нужен Docker CLI, чтобы проверять серверный сертификат remote-docker.
