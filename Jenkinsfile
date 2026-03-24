@@ -170,23 +170,7 @@ pipeline {
           # Минимальная проверка:
           # контейнер из только что собранного образа должен стартовать и завершиться без ошибки.
           docker run --rm ${IMAGE_NAME}:${BUILD_NUMBER}
-          sleep 20
-
-          # 3. Проверяем, что контейнер все еще работает (State.Running == true)
-          if [ "$(docker inspect -f '{{.State.Running}}' "$CONTAINER_NAME")" != "true" ]; then
-             echo "ERROR: Application crashed immediately after start!"
-             # Выводим логи, чтобы понять причину падения
-             docker logs "$CONTAINER_NAME"
-             # Удаляем остановленный контейнер
-             docker rm "$CONTAINER_NAME"
-             exit 1
-          fi
-
-          echo "Application started successfully."
-
-          # 4. Останавливаем контейнер, чтобы стадия завершилась
-          docker stop "$CONTAINER_NAME"
-          docker rm "$CONTAINER_NAME"
+         
         '''
       }
     }
